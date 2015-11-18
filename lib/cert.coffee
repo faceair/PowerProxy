@@ -5,7 +5,7 @@ async = require 'async'
 
 util = require './utils'
 
-module.exports = class Cert
+module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->
     @is_win = /^win/.test process.platform
     if @is_win
@@ -31,7 +31,7 @@ module.exports = class Cert
 
     return fs.existsSync(crt_file) and fs.existsSync(key_file)
 
-  createCert = (hostname, callback) ->
+  createCert: (hostname, callback) ->
     unless @isRootCertFileExists()
       return callback new Error 'Root Cert File Not Found.'
 
@@ -43,7 +43,7 @@ module.exports = class Cert
       else
         callback()
 
-  getCertificate = (hostname, callback) ->
+  getCertificate: (hostname, callback) ->
     key_file = path.join(@cert_path, "#{hostname}.key")
     crt_file = path.join(@cert_path, "#{hostname}.crt")
 
