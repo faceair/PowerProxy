@@ -2,7 +2,7 @@ Promise = require 'bluebird'
 https = require 'https'
 path = require 'path'
 
-module.export = class PowerProxy
+module.exports = class PowerProxy
   constructor: (@config) ->
 
   setup: ->
@@ -10,17 +10,20 @@ module.export = class PowerProxy
     @initialized = true
 
     Promise.resolve()
+    .then => @setupUtils()
     .then => @setupCert()
     .then => @setupServer()
+    .catch (err) ->
+      throw err
 
   setupUtils: ->
     @utils = require './utils'
 
   setupCert: ->
-    CertificateManager = require './lib/cert'
+    CertificateManager = require './lib/CertificateManager'
 
     @certmgr = new CertificateManager
-      cert_path: path.join(utils.getUserHome(), '/.powerproxy')
+      cert_path: path.join(@utils.getUserHome(), '/.powerproxy')
       cmd_path: path.join(__dirname, '..', './cert/')
 
     @certmgr.confirmCertPath()

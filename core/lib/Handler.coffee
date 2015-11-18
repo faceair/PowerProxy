@@ -9,7 +9,7 @@ _ = require 'lodash'
 
 {utils, certmgr} = Power
 
-export.requestHandler = (req, userRes) ->
+exports.requestHandler = (req, userRes) ->
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
 
   post_data = []
@@ -59,7 +59,7 @@ export.requestHandler = (req, userRes) ->
 
     proxy_req.end req_data
 
-export.connectHandler = (req, socket, head) ->
+exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')
 
   port_range = 40000
@@ -87,7 +87,7 @@ export.connectHandler = (req, socket, head) ->
         SNICallback: SNIPrepareCert
         key: key
         cert: cert
-      , export.requestHandler
+      , exports.requestHandler
       .listen(port)
 
     proxy_conn = net.connect '127.0.0.1', port, ->

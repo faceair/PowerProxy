@@ -1,8 +1,8 @@
 Promise = require 'bluebird'
 path = require 'path'
 
-child_process = Promise.promisifyAll(require 'child_process')
-fs = Promise.promisifyAll(require 'fs')
+child_process = require 'child_process'
+fs = require 'fs'
 
 module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->
@@ -15,36 +15,36 @@ module.exports = class CertificateManager
       @cmd_gen_cert = path.join(@cmd_path, './gen-cer')
 
   confirmCertPath: ->
-    fs.access @cert_path, fs.R_OK
+    Promise.promisify(fs.access) @cert_path, fs.R_OK
     .catch =>
-      fs.mkdir @cert_path, 0777
-    .catch ->
-      throw new Error 'Cert Path Can Not Write.'
+      Promise.promisify(fs.mkdir) @cert_path, '0777'
+      .catch ->
+        throw new Error 'Cert Path Can Not Write.'
 
   isRootCertFileExists: ->
     crt_file = path.join @cert_path, 'rootCA.crt'
     key_file = path.join @cert_path, 'rootCA.key'
     Promise.map [crt_file, key_file], (file_path) ->
-      fs.access file_path, fs.R_OK
-    .catch ->
-      throw new Error 'Root Cert File Not Found.'
+      Promise.promisify(fs.access) file_path, fs.R_OK
+    .catch =>
+      @generateRootCert()
 
   createCert: (hostname) ->
     @isRootCertFileExists()
     .then =>
-      child_process.exec "#{@cmd_gen_cert} #{hostname} #{certDir}",
+      Promise.promisify(child_process.exec) "#{@cmd_gen_cert} #{hostname} #{@cert_path}",
         cwd: @cert_path
-    .catch ->
-      throw new Error 'Create Certificate Failed.'
+      .catch ->
+        throw new Error 'Create Certificate Failed.'
 
   getCertFile: (hostname) ->
     key_file = path.join(@cert_path, "#{hostname}.key")
     crt_file = path.join(@cert_path, "#{hostname}.crt")
 
-    Promise.map [key_file, crt_file], fs.readFile
+    Promise.map [key_file, crt_file], Promise.promisify(fs.readFile)
     .catch (files) =>
       @createCert(hostname).then =>
-        @getCertificate hostname
+        @getCertFile hostname
 
   generateRootCert: (callback) ->
     new Promise (resolve, reject) =>
@@ -59,10 +59,11 @@ module.exports = class CertificateManager
             reject new Error 'Create Root Certificate Failed.'
 
   clearCerts: ->
+    console.log @cert_path
     if @is_win
-      child_process.exec 'del * /q', cwd: @cert_path
+      Promise.promisify(child_process.exec) "del #{@cert_path}/* /q"
     else
-      child_process.exec 'rm *.key *.csr *.crt', cwd: @cert_path
+      Promise.promisify(child_process.exec) "rm -f #{@cert_path}/*.key #{@cert_path}/*.csr #{@cert_path}/*.crt"
 
   getRootCertFilePath: ->
     @isRootCertFileExists()
