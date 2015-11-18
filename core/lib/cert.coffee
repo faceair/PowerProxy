@@ -1,5 +1,5 @@
 Promise = require 'bluebird'
-async = require 'async'
+path = require 'path'
 
 child_process = Promise.promisifyAll(require 'child_process')
 fs = Promise.promisifyAll(require 'fs')
@@ -37,7 +37,7 @@ module.exports = class CertificateManager
     .catch ->
       throw new Error 'Create Certificate Failed.'
 
-  getCertificate: (hostname) ->
+  getCertFile: (hostname) ->
     key_file = path.join(@cert_path, "#{hostname}.key")
     crt_file = path.join(@cert_path, "#{hostname}.crt")
 

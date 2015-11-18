@@ -26,6 +26,6 @@ module.export = class PowerProxy
     @cert.confirmCertPath()
 
   setupServer: ->
-    @cert.getCertificate @config.proxy.host
+    @cert.getCertFile @config.proxy.host
     .then ([key, cert]) =>
       @server = https.createServer(key, cert, ->)
