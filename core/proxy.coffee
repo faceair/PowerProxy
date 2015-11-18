@@ -19,13 +19,19 @@ module.export = class PowerProxy
   setupCert: ->
     CertificateManager = require './lib/cert'
 
-    @cert = new CertificateManager
+    @certmgr = new CertificateManager
       cert_path: path.join(utils.getUserHome(), '/.powerproxy')
       cmd_path: path.join(__dirname, '..', './cert/')
 
-    @cert.confirmCertPath()
+    @certmgr.confirmCertPath()
 
   setupServer: ->
-    @cert.getCertFile @config.proxy.host
+    {connectHandler, requestHandler} = require './lib/Handler'
+
+    @certmgr.getCertFile @config.proxy.host
     .then ([key, cert]) =>
-      @server = https.createServer(key, cert, ->)
+      @server = https.createServer key, cert, requestHandler
+      @server.on 'connect', connectHandler
+
+  startServer: ->
+    @server.listen @config.proxy.port
