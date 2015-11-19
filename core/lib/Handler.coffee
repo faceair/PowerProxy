@@ -21,7 +21,7 @@ exports.requestHandler = (req, res) ->
     headers = name
     unless _.isObject headers
       headers = {}
-    headers[name] = value
+      headers[name] = value
     for name, value of headers
       res.setHeader name, value
     return res
