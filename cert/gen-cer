@@ -9,9 +9,9 @@ commonname=$domain
 country=ZH
 state=Shanghai
 locality=Shanghai
-organization=a.com
+organization=PowerProxy.com
 organizationalunit=IT
-email=a@b.com
+email=PowerProxy@PowerProxy
 
 #Optional
 password=r4ww7j93N4H9udNZ

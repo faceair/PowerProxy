@@ -7,9 +7,9 @@ set commonname=%domain%
 set country=ZH
 set state=Shanghai
 set locality=Shanghai
-set organization=a.com
-set organizationalunit=IT
-set email=a@b.com
+set organization=PowerProxy.com
+set organizationalunit=PowerProxy
+set email=PowerProxy@PowerProxy
 set password=r4ww7j93N4H9udNZ
 
 echo Generating key request for %domain%
