@@ -68,3 +68,5 @@ execFile = (command, args, path) ->
         resolve()
       else
         reject new Error 'Create Certificate Failed.'
+    spawn_steam.on 'error', ->
+      reject new Error 'Create Certificate Failed.'

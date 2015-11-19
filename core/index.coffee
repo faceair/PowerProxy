@@ -1,6 +1,8 @@
+Pluggable = require 'node-pluggable'
 Promise = require 'bluebird'
 http = require 'http'
 path = require 'path'
+fs = require 'fs'
 
 module.exports = class PowerProxy
   constructor: (@config) ->
@@ -11,11 +13,18 @@ module.exports = class PowerProxy
 
     Promise.resolve()
     .then => @setupUtils()
+    .then => @setupPlugin()
     .then => @setupCert()
     .then => @setupServer()
 
   setupUtils: ->
     @utils = require './utils'
+
+  setupPlugin: ->
+    @plugin = new Pluggable()
+    for filename in fs.readdirSync(path.join __dirname, '..', 'plugin')
+      {before, after} = require path.join(__dirname, '..', 'plugin', filename)
+      @plugin.use('before.request', before).use('after.request', after)
 
   setupCert: ->
     CertificateManager = require './lib/CertificateManager'

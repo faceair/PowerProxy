@@ -5,11 +5,9 @@ url = require 'url'
 net = require 'net'
 tls = require 'tls'
 
-HttpsProxyAgent = require 'https-proxy-agent'
-HttpProxyAgent = require 'http-proxy-agent'
 _ = require 'lodash'
 
-{config, utils, certmgr} = Power
+{config, utils, certmgr, plugin} = Power
 
 exports.requestHandler = (req, userRes) ->
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
@@ -30,33 +28,51 @@ exports.requestHandler = (req, userRes) ->
       path: path
       method: req.method
       headers: utils.lowerKeys(_.omit(req.headers, ['accept-encoding']))
-      agent: if is_https then new HttpsProxyAgent(config.proxy) else new HttpProxyAgent(config.proxy)
 
     options.headers['content-length'] = req_data.length
 
-    proxy_req = (if is_https then https else http).request options, (res) ->
-      post_data = []
-      res.on 'data', (chunk) ->
-        post_data.push chunk
-      res.on 'end', ->
-        res_data = Buffer.concat(post_data)
+    logger = {}
+    before_request_data = {is_https, full_url, options, logger}
+    plugin.run 'before.request', before_request_data, ->
+      proxy_req = (if is_https then https else http).request before_request_data.options, (res) ->
+        post_data = []
+        res.on 'data', (chunk) ->
+          post_data.push chunk
+        res.on 'end', ->
+          res_data = Buffer.concat(post_data)
 
-        res_header = utils.lowerKeys(res.headers)
-        is_gzip = /gzip/i.test(res_header['content-encoding'])
+          res_header = utils.lowerKeys(res.headers)
+          is_gzip = /gzip/i.test(res_header['content-encoding'])
 
-        if is_gzip
-          delete res_header['content-encoding']
-          zlib.gunzip res_data, (err, buffer) ->
-            userRes.writeHead res.statusCode, res_header
-            userRes.end buffer
-        else
-          userRes.writeHead res.statusCode, res_header
-          userRes.end res_data
+          if is_gzip
+            delete res_header['content-encoding']
+            zlib.gunzip res_data, (err, buffer) ->
+              return userRes.end() if err
 
-    proxy_req.on 'error', ->
-      userRes.end()
+              after_request_data =
+                status_code: res.statusCode
+                headers: res_header
+                body: buffer
+                logger: before_request_data.logger
 
-    proxy_req.end req_data
+              plugin.run 'after.request', after_request_data, ->
+                userRes.writeHead after_request_data.status_code, after_request_data.headers
+                userRes.end after_request_data.body
+          else
+            after_request_data =
+              status_code: res.statusCode
+              headers: res_header
+              body: res_data
+              logger: before_request_data.logger
+
+            plugin.run 'after.request', after_request_data, ->
+              userRes.writeHead after_request_data.status_code, after_request_data.headers
+              userRes.end after_request_data.body
+
+      proxy_req.on 'error', ->
+        userRes.end()
+
+      proxy_req.end req_data
 
 exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')
