@@ -22,7 +22,7 @@ module.exports = class PowerProxy
 
   setupPlugin: ->
     @plugin = new Pluggable()
-    for filename in fs.readdirSync(path.join __dirname, '..', 'plugin')
+    for filename in @config.plugins ? []
       {before, after} = require path.join(__dirname, '..', 'plugin', filename)
       @plugin.use('before.request', before).use('after.request', after)
 
