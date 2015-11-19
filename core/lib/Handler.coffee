@@ -67,12 +67,12 @@ exports.connectHandler = (req, socket, head) ->
     port = port_range
     port_range += 1
     server = net.createServer()
-    server.listen port, (err) ->
-      server.once 'close', ->
+    server.listen port, ->
+      server.close ->
         callback port
-      server.close()
-    server.on 'error', (err) ->
-      getPort callback
+    server.on 'error', ->
+      server.close ->
+        getPort callback
 
   SNIPrepareCert = (server_name, callback) ->
     certmgr.getCertFile server_name
@@ -80,9 +80,9 @@ exports.connectHandler = (req, socket, head) ->
       callback null, tls.createSecureContext {key, cert}
     .catch callback
 
-  getPort (port) ->
-    certmgr.getCertFile 'anyproxy_internal_https_server'
-    .then ([key, cert]) ->
+  certmgr.getCertFile 'powerproxy_internal_https_server'
+  .then ([key, cert]) ->
+    getPort (port) ->
       https.createServer
         SNICallback: SNIPrepareCert
         key: key
@@ -90,7 +90,7 @@ exports.connectHandler = (req, socket, head) ->
       , exports.requestHandler
       .listen(port)
 
-    proxy_conn = net.connect '127.0.0.1', port, ->
-      socket.write "HTTP/#{req.httpVersion} 200 OK\r\n\r\n", 'UTF-8', ->
-        proxy_conn.pipe(socket)
-        socket.pipe(proxy_conn)
+      proxy_conn = net.connect port, '127.0.0.1', ->
+        socket.write "HTTP/#{req.httpVersion} 200 OK\r\n\r\n", 'UTF-8', ->
+          proxy_conn.pipe(socket)
+          socket.pipe(proxy_conn)

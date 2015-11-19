@@ -7,7 +7,7 @@ require('crash-reporter').start()
 global.Power = new PowerProxy
   proxy:
     host: 'localhost'
-    port: 1080
+    port: 8001
 
 Power.setup().then ->
   Power.startServer()

@@ -1,5 +1,5 @@
 Promise = require 'bluebird'
-https = require 'https'
+http = require 'http'
 path = require 'path'
 
 module.exports = class PowerProxy
@@ -29,11 +29,10 @@ module.exports = class PowerProxy
   setupServer: ->
     {connectHandler, requestHandler} = require './lib/Handler'
 
-    @certmgr.getCertFile @config.proxy.host
-    .then ([key, cert]) =>
-      @server = https.createServer {key, cert}, requestHandler
-      @server.on 'connect', connectHandler
+    @server = http.createServer requestHandler
+    @server.on 'connect', connectHandler
 
   startServer: ->
-    @server.listen @config.proxy.port, ->
+    @server.listen @config.proxy.port, (err) ->
+      throw err if err
       console.log 'ProwerProxy is running ...'
