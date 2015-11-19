@@ -13,8 +13,6 @@ module.exports = class PowerProxy
     .then => @setupUtils()
     .then => @setupCert()
     .then => @setupServer()
-    .catch (err) ->
-      throw err
 
   setupUtils: ->
     @utils = require './utils'
@@ -23,7 +21,7 @@ module.exports = class PowerProxy
     CertificateManager = require './lib/CertificateManager'
 
     @certmgr = new CertificateManager
-      cert_path: path.join(@utils.getUserHome(), '/.powerproxy')
+      cert_path: path.join(@utils.getUserHome(), '/.powerproxy/')
       cmd_path: path.join(__dirname, '..', './cert/')
 
     @certmgr.confirmCertPath()
@@ -33,8 +31,9 @@ module.exports = class PowerProxy
 
     @certmgr.getCertFile @config.proxy.host
     .then ([key, cert]) =>
-      @server = https.createServer key, cert, requestHandler
+      @server = https.createServer {key, cert}, requestHandler
       @server.on 'connect', connectHandler
 
   startServer: ->
-    @server.listen @config.proxy.port
+    @server.listen @config.proxy.port, ->
+      console.log 'ProwerProxy is running ...'

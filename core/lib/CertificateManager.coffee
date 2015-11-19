@@ -32,34 +32,23 @@ module.exports = class CertificateManager
   createCert: (hostname) ->
     @isRootCertFileExists()
     .then =>
-      Promise.promisify(child_process.exec) "#{@cmd_gen_cert} #{hostname} #{@cert_path}",
-        cwd: @cert_path
-      .catch ->
-        throw new Error 'Create Certificate Failed.'
+      execFile @cmd_gen_cert, [hostname, @cert_path], @cert_path
 
   getCertFile: (hostname) ->
     key_file = path.join(@cert_path, "#{hostname}.key")
     crt_file = path.join(@cert_path, "#{hostname}.crt")
 
-    Promise.map [key_file, crt_file], Promise.promisify(fs.readFile)
-    .catch (files) =>
+    Promise.map [key_file, crt_file], (file_path) ->
+      Promise.promisify(fs.readFile) file_path
+    .catch (err) =>
       @createCert(hostname).then =>
         @getCertFile hostname
 
   generateRootCert: (callback) ->
-    new Promise (resolve, reject) =>
-      @clearCerts().then =>
-        spawn_steam = child_process.spawn @cmd_gen_root, ['.'],
-          cwd: @cert_path
-          stdio: 'inherit'
-        spawn_steam.on 'close', (code) ->
-          if code is 0
-            resolve()
-          else
-            reject new Error 'Create Root Certificate Failed.'
+    @clearCerts().then =>
+      execFile @cmd_gen_root, ['.'], @cert_path
 
   clearCerts: ->
-    console.log @cert_path
     if @is_win
       Promise.promisify(child_process.exec) "del #{@cert_path}/* /q"
     else
@@ -69,3 +58,14 @@ module.exports = class CertificateManager
     @isRootCertFileExists()
     .then =>
       return path.join @cert_path, 'rootCA.crt'
+
+execFile = (command, args, path) ->
+  new Promise (resolve, reject) =>
+    spawn_steam = child_process.spawn command, args,
+      cwd: path
+      stdio: 'inherit'
+    spawn_steam.on 'close', (code) ->
+      if code is 0
+        resolve()
+      else
+        reject new Error 'Create Certificate Failed.'

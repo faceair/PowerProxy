@@ -6,10 +6,13 @@ require('crash-reporter').start()
 
 global.Power = new PowerProxy
   proxy:
-    host: '127.0.0.1'
+    host: 'localhost'
     port: 1080
 
-Power.setup().then -> Power.startServer()
+Power.setup().then ->
+  Power.startServer()
+.catch (err) ->
+  throw err
 
 app.on 'window-all-closed', ->
   if process.platform != 'darwin'
