@@ -44,10 +44,6 @@ exports.requestHandler = (req, userRes) ->
         res_header = utils.lowerKeys(res.headers)
         is_gzip = /gzip/i.test(res_header['content-encoding'])
 
-        delete res_header['content-length']
-
-        userRes.writeHead res.statusCode, res_header
-
         if is_gzip
           delete res_header['content-encoding']
           zlib.gunzip res_data, (err, buffer) ->
