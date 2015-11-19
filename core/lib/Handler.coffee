@@ -9,13 +9,12 @@ _ = require 'lodash'
 
 {config, utils, certmgr, plugin} = Power
 
-exports.requestHandler = (req, userRes) ->
+exports.requestHandler = (req, res) ->
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
 
   post_data = []
   req.on 'data', (chunk) ->
     post_data.push chunk
-
   req.on 'end', ->
     req_data = Buffer.concat(post_data)
 
@@ -23,6 +22,7 @@ exports.requestHandler = (req, userRes) ->
     {hostname, port, path} = url.parse full_url
 
     options =
+      url: full_url
       hostname: hostname or req.headers.host
       port: port or req.port or (if is_https then 443 else 80)
       path: path
@@ -31,46 +31,35 @@ exports.requestHandler = (req, userRes) ->
 
     options.headers['content-length'] = req_data.length
 
-    logger = {}
-    before_request_data = {is_https, full_url, options, logger}
-    plugin.run 'before.request', before_request_data, ->
-      proxy_req = (if is_https then https else http).request before_request_data.options, (res) ->
-        post_data = []
-        res.on 'data', (chunk) ->
-          post_data.push chunk
-        res.on 'end', ->
-          res_data = Buffer.concat(post_data)
+    plugin.run 'before.request', options, res, ->
+      proxy_req = (if is_https then https else http).request options, (proxy_res) ->
+        receive_data = []
+        proxy_res.on 'data', (chunk) ->
+          receive_data.push chunk
+        proxy_res.on 'end', ->
+          body = Buffer.concat(receive_data)
 
-          res_header = utils.lowerKeys(res.headers)
-          is_gzip = /gzip/i.test(res_header['content-encoding'])
+          resource =
+            statusCode: proxy_res.statusCode
+            headers: utils.lowerKeys(proxy_res.headers)
+            body: body
 
+          is_gzip = /gzip/i.test(resource.headers['content-encoding'])
           if is_gzip
-            delete res_header['content-encoding']
-            zlib.gunzip res_data, (err, buffer) ->
-              return userRes.end() if err
-
-              after_request_data =
-                status_code: res.statusCode
-                headers: res_header
-                body: buffer
-                logger: before_request_data.logger
-
-              plugin.run 'after.request', after_request_data, ->
-                userRes.writeHead after_request_data.status_code, after_request_data.headers
-                userRes.end after_request_data.body
+            delete resource.headers['content-encoding']
+            zlib.gunzip body, (err, body) ->
+              return res.end() if err
+              resource.body = body
+              plugin.run 'after.request', resource, res, ->
+                res.writeHead resource.statusCode, resource.headers
+                res.end resource.body
           else
-            after_request_data =
-              status_code: res.statusCode
-              headers: res_header
-              body: res_data
-              logger: before_request_data.logger
-
-            plugin.run 'after.request', after_request_data, ->
-              userRes.writeHead after_request_data.status_code, after_request_data.headers
-              userRes.end after_request_data.body
+            plugin.run 'after.request', resource, res, ->
+              res.writeHead resource.statusCode, resource.headers
+              res.end resource.body
 
       proxy_req.on 'error', ->
-        userRes.end()
+        res.end()
 
       proxy_req.end req_data
 

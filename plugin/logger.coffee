@@ -1,12 +1,12 @@
-exports.before = (before_request_data, next) ->
-  before_request_data.logger =
+exports.before = (request, res, next) ->
+  res.logger =
     start: new Date().getTime()
-    url: before_request_data.full_url
-    method: before_request_data.options.method
+    url: request.url
+    method: request.method
   next()
 
-exports.after = (after_request_data, next) ->
-  {start, url, method} = after_request_data.logger
-  spend = new Date().getTime() - after_request_data.logger.start
-  console.log "#{method} #{url} #{after_request_data.status_code} #{spend}ms"
+exports.after = (resource, res, next) ->
+  {start, url, method} = res.logger
+  spend = new Date().getTime() - start
+  console.log "#{method} #{url} #{resource.statusCode} #{spend}ms"
   next()
