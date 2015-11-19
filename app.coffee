@@ -6,7 +6,7 @@ require('crash-reporter').start()
 
 global.Power = new PowerProxy
   port: 8001
-  plugins: ['logger']
+  plugins: ['logger', 'baidu']
 
 Power.setup().then ->
   Power.startServer()
