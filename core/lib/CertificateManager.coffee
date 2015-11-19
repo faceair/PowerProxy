@@ -63,7 +63,6 @@ execFile = (command, args, path) ->
   new Promise (resolve, reject) =>
     spawn_steam = child_process.spawn command, args,
       cwd: path
-      stdio: 'inherit'
     spawn_steam.on 'close', (code) ->
       if code is 0
         resolve()
