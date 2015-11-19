@@ -5,9 +5,11 @@ url = require 'url'
 net = require 'net'
 tls = require 'tls'
 
+HttpsProxyAgent = require 'https-proxy-agent'
+HttpProxyAgent = require 'http-proxy-agent'
 _ = require 'lodash'
 
-{utils, certmgr} = Power
+{config, utils, certmgr} = Power
 
 exports.requestHandler = (req, userRes) ->
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
@@ -28,6 +30,7 @@ exports.requestHandler = (req, userRes) ->
       path: path
       method: req.method
       headers: utils.lowerKeys(_.omit(req.headers, ['accept-encoding']))
+      agent: if is_https then new HttpsProxyAgent(config.proxy) else new HttpProxyAgent(config.proxy)
 
     options.headers['content-length'] = req_data.length
 

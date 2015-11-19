@@ -33,6 +33,6 @@ module.exports = class PowerProxy
     @server.on 'connect', connectHandler
 
   startServer: ->
-    @server.listen @config.proxy.port, (err) ->
+    @server.listen @config.port, (err) ->
       throw err if err
       console.log 'ProwerProxy is running ...'
