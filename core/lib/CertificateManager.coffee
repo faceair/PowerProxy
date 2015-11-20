@@ -4,8 +4,11 @@ path = require 'path'
 child_process = require 'child_process'
 fs = require 'fs'
 
+FileCache = require './FileCache'
+
 module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->
+    @cache = new FileCache 1024 * 1024
     @is_win = /^win/.test process.platform
     if @is_win
       @cmd_gen_root = path.join(@cmd_path, './gen-rootCA.cmd')
@@ -20,6 +23,8 @@ module.exports = class CertificateManager
       Promise.promisify(fs.mkdir) @cert_path, '0777'
       .catch ->
         throw new Error 'Cert Path Can Not Write.'
+    .then =>
+      @isRootCertFileExists()
 
   isRootCertFileExists: ->
     crt_file = path.join @cert_path, 'rootCA.crt'
@@ -28,21 +33,6 @@ module.exports = class CertificateManager
       Promise.promisify(fs.access) file_path, fs.R_OK
     .catch =>
       @generateRootCert()
-
-  createCert: (hostname) ->
-    @isRootCertFileExists()
-    .then =>
-      execFile @cmd_gen_cert, [hostname, @cert_path], @cert_path
-
-  getCertFile: (hostname) ->
-    key_file = path.join(@cert_path, "#{hostname}.key")
-    crt_file = path.join(@cert_path, "#{hostname}.crt")
-
-    Promise.map [key_file, crt_file], (file_path) ->
-      Promise.promisify(fs.readFile) file_path
-    .catch (err) =>
-      @createCert(hostname).then =>
-        @getCertFile hostname
 
   generateRootCert: (callback) ->
     @clearCerts().then =>
@@ -54,10 +44,17 @@ module.exports = class CertificateManager
     else
       Promise.promisify(child_process.exec) "rm -f #{@cert_path}/*.key #{@cert_path}/*.csr #{@cert_path}/*.crt"
 
-  getRootCertFilePath: ->
-    @isRootCertFileExists()
-    .then =>
-      return path.join @cert_path, 'rootCA.crt'
+  getCertFile: (hostname) ->
+    crt_file = path.join(@cert_path, "#{hostname}.crt")
+    key_file = path.join(@cert_path, "#{hostname}.key")
+    Promise.map [crt_file, key_file], (file_path) =>
+      @cache.readFile file_path
+    .catch (err) =>
+      @createCert(hostname).then =>
+        @getCertFile hostname
+
+  createCert: (hostname) ->
+    execFile @cmd_gen_cert, [hostname, @cert_path], @cert_path
 
 execFile = (command, args, path) ->
   new Promise (resolve, reject) =>
