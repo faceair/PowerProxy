@@ -8,7 +8,7 @@ FileCache = require './FileCache'
 
 module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->
-    @cache = new FileCache 1024 * 1024
+    @cache = new FileCache 1024
     @is_win = /^win/.test process.platform
     if @is_win
       @cmd_gen_root = path.join(@cmd_path, './gen-rootCA.cmd')
@@ -27,8 +27,8 @@ module.exports = class CertificateManager
       @isRootCertFileExists()
 
   isRootCertFileExists: ->
-    cert_file = path.join @cert_path, 'rootCA.crt'
-    key_file = path.join @cert_path, 'rootCA.key'
+    cert_file = path.join(@cert_path, 'rootCA.crt')
+    key_file = path.join(@cert_path, 'rootCA.key')
     Promise.map [key_file, cert_file], (file_path) ->
       Promise.promisify(fs.access) file_path, fs.R_OK
     .catch =>
