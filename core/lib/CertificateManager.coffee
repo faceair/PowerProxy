@@ -27,9 +27,9 @@ module.exports = class CertificateManager
       @isRootCertFileExists()
 
   isRootCertFileExists: ->
-    crt_file = path.join @cert_path, 'rootCA.crt'
+    cert_file = path.join @cert_path, 'rootCA.crt'
     key_file = path.join @cert_path, 'rootCA.key'
-    Promise.map [crt_file, key_file], (file_path) ->
+    Promise.map [key_file, cert_file], (file_path) ->
       Promise.promisify(fs.access) file_path, fs.R_OK
     .catch =>
       @generateRootCert()
@@ -45,9 +45,9 @@ module.exports = class CertificateManager
       Promise.promisify(child_process.exec) "rm -f #{@cert_path}/*.key #{@cert_path}/*.csr #{@cert_path}/*.crt"
 
   getCertFile: (hostname) ->
-    crt_file = path.join(@cert_path, "#{hostname}.crt")
+    cert_file = path.join(@cert_path, "#{hostname}.crt")
     key_file = path.join(@cert_path, "#{hostname}.key")
-    Promise.map [crt_file, key_file], (file_path) =>
+    Promise.map [key_file, cert_file], (file_path) =>
       @cache.readFile file_path
     .catch (err) =>
       @createCert(hostname).then =>
@@ -60,6 +60,7 @@ execFile = (command, args, path) ->
   new Promise (resolve, reject) =>
     spawn_steam = child_process.spawn command, args,
       cwd: path
+
     spawn_steam.on 'close', (code) ->
       if code is 0
         resolve()
