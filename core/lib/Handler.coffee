@@ -56,6 +56,9 @@ exports.requestHandler = (req, res) ->
       followRedirect: false
       encoding: null
       forever: true
+      forever: /keep-alive/i.test req.headers.connection
+      pool:
+        maxSockets: 1024
 
     plugin.run 'before.request', options, res, ->
       options.headers['content-length'] = options.body.length
