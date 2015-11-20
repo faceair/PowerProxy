@@ -47,24 +47,26 @@ exports.requestHandler = (req, res) ->
     post_data.push chunk
   req.on 'end', ->
     req_data = Buffer.concat(post_data)
+    req.headers = utils.lowerKeys req.headers
 
     options =
       url: if is_https then "https://#{req.headers.host}#{req.url}" else req.url
       method: req.method.toUpperCase()
-      headers: req.headers
+      headers: _.extend(req.headers, 'content-length': req_data.length)
       body: req_data
       followRedirect: false
       encoding: null
       forever: /keep-alive/i.test req.headers.connection
       pool:
         maxSockets: 1024
+      gzip: true
 
     plugin.run 'before.request', options, res, ->
-      options.headers['content-length'] = options.body.length
       request options, (err, proxy_res) ->
         return res.end() if err
         resource = _.pick proxy_res, ['statusCode', 'headers', 'body']
-
+        delete resource.headers['content-encoding']
+        resource.headers['content-length'] = resource.body.length
         plugin.run 'after.request', resource, res, ->
           res.set(resource.headers).send(resource.statusCode, resource.body)
 
