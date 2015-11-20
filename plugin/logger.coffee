@@ -8,7 +8,6 @@ exports.before = (request, res, next) ->
   next()
 
 exports.after = (response, res, next) ->
-  {start, url, method} = res.logger
-  spend = new Date().getTime() - start
-  console.log "#{method} #{url} #{response.statusCode} #{spend}ms"
+  spend = new Date().getTime() - res.logger.start
+  console.log "#{res.logger.method} #{res.logger.url} #{response.statusCode} #{spend}ms"
   next()

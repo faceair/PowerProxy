@@ -9,35 +9,7 @@ _ = require 'lodash'
 {config, utils, certmgr, dns} = Power
 
 exports.requestHandler = (req, res) ->
-  res.get = (field) ->
-    res.getHeader field
-
-  res.status = (status) ->
-    res.statusCode = status
-    return res
-
-  res.set = res.header = (name, value) ->
-    headers = name
-    unless _.isObject headers
-      headers = {}
-      headers[name] = value
-    for name, value of headers
-      res.setHeader name, value
-    return res
-
-  res.send = (status, data) ->
-    unless _.isNumber status
-      [status, data] = [null, status]
-
-    unless res.get('Content-Type')
-      res.set 'Content-Type', 'text/html; charset=utf-8'
-    res.statusCode = status if status
-    res.end data
-
-  res.redirect = (url, status = 302) ->
-    res.statusCode = status
-    res.set 'location', url
-    res.end()
+  res = utils.extendRes res
 
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
 
@@ -60,7 +32,8 @@ exports.requestHandler = (req, res) ->
         maxSockets: 1024
       gzip: true
 
-    Power.plugin.run 'before.request', options, res, ->
+    Power.plugin.run 'before.request', options, res, (err) ->
+      throw err if err
 
       Promise.resolve().then ->
         if options.dns?.address and options.dns?.port and options.dns?.type
@@ -76,7 +49,9 @@ exports.requestHandler = (req, res) ->
           delete response.headers['content-encoding']
           response.headers['content-length'] = response.body.length
 
-          Power.plugin.run 'after.request', response, res, ->
+          Power.plugin.run 'after.request', response, res, (err) ->
+            throw err if err
+
             res.set(response.headers).send(response.statusCode, response.body)
 
 exports.connectHandler = (req, socket, head) ->
