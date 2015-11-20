@@ -55,7 +55,6 @@ exports.requestHandler = (req, res) ->
       body: req_data
       followRedirect: false
       encoding: null
-      forever: true
       forever: /keep-alive/i.test req.headers.connection
       pool:
         maxSockets: 1024
