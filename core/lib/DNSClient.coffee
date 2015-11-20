@@ -28,12 +28,14 @@ module.exports = class DNSClient
         return reject err if err
 
         record = _.find answer, (record) -> record.address
-        resolve record.address
-
-        @cachePush
-          hostname: hostname
-          address: record.address
-          expired_at: new Date().getTime() + record.ttl * 1000
+        if record
+          resolve record.address
+          @cachePush
+            hostname: hostname
+            address: record.address
+            expired_at: new Date().getTime() + record.ttl * 1000
+        else
+          resolve null
 
       dns_req.send()
 

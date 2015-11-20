@@ -34,13 +34,13 @@ exports.requestHandler = (req, res) ->
 
     Power.plugin.run 'before.request', options, res, (err) ->
       throw err if err
-
+      console.log options
       Promise.resolve().then ->
-        dns.lookup options.uri.host, (options.dns ? config.dns?.server)
-        .then (address) ->
-          options.hostname = address
+        if options.dns?.address and options.dns?.port and options.dns?.type
+          dns.lookup options.uri.host, options.dns
+          .then (address) ->
+            options.hostname = address
       .then ->
-
         request options, (err, proxy_res) ->
           return res.end() if err
 
