@@ -1,6 +1,4 @@
 https = require 'https'
-zlib = require 'zlib'
-url = require 'url'
 net = require 'net'
 tls = require 'tls'
 
