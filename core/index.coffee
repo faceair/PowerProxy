@@ -13,15 +13,23 @@ module.exports = class PowerProxy
 
     Promise.resolve()
     .then => @setupUtils()
-    .then => @setupPlugin()
+    .then => @setupCache()
     .then => @setupCert()
+    .then => @setupDNS()
     .then => @setupServer()
+    .then => @setupPlugin()
 
   setupUtils: ->
     @utils = require './utils'
 
+  setupCache: ->
+    FileCache = require './lib/FileCache'
+
+    @cache = new FileCache 1024
+
   setupPlugin: ->
     @plugin = new Pluggable()
+
     for filename in @config.plugins ? []
       {before, after} = require path.join(__dirname, '..', 'plugin', filename)
       @plugin.use('before.request', before).use('after.request', after)
@@ -41,7 +49,12 @@ module.exports = class PowerProxy
     @server = http.createServer requestHandler
     @server.on 'connect', connectHandler
 
+  setupDNS: ->
+    DNSClient = require './lib/DNSClient'
+
+    @dns = new DNSClient @config.dns
+
   startServer: ->
-    @server.listen @config.port, (err) ->
+    @server.listen @config.port, @config.host, (err) ->
       throw err if err
       console.log 'ProwerProxy is running ...'

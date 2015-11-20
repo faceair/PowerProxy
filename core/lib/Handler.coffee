@@ -1,11 +1,12 @@
 https = require 'https'
 net = require 'net'
+url = require 'url'
 tls = require 'tls'
 
 request = require 'request'
 _ = require 'lodash'
 
-{config, utils, certmgr, plugin} = Power
+{config, utils, certmgr, dns} = Power
 
 exports.requestHandler = (req, res) ->
   res.get = (field) ->
@@ -48,7 +49,7 @@ exports.requestHandler = (req, res) ->
     req.headers = utils.lowerKeys req.headers
 
     options =
-      url: if is_https then "https://#{req.headers.host}#{req.url}" else req.url
+      uri: url.parse(if is_https then "https://#{req.headers.host}#{req.url}" else req.url)
       method: req.method.toUpperCase()
       headers: _.extend(req.headers, 'content-length': req_data.length)
       body: req_data
@@ -59,16 +60,24 @@ exports.requestHandler = (req, res) ->
         maxSockets: 1024
       gzip: true
 
-    plugin.run 'before.request', options, res, ->
-      request options, (err, proxy_res) ->
-        return res.end() if err
+    Power.plugin.run 'before.request', options, res, ->
 
-        response = _.pick proxy_res, ['statusCode', 'headers', 'body']
-        delete response.headers['content-encoding']
-        response.headers['content-length'] = response.body.length
+      Promise.resolve().then ->
+        if options.dns?.address and options.dns?.port and options.dns?.type
+          dns.lookup options.uri.host, options.dns
+          .then (address) ->
+            options.hostname = address
+      .then ->
 
-        plugin.run 'after.request', response, res, ->
-          res.set(response.headers).send(response.statusCode, response.body)
+        request options, (err, proxy_res) ->
+          return res.end() if err
+
+          response = _.pick proxy_res, ['statusCode', 'headers', 'body']
+          delete response.headers['content-encoding']
+          response.headers['content-length'] = response.body.length
+
+          Power.plugin.run 'after.request', response, res, ->
+            res.set(response.headers).send(response.statusCode, response.body)
 
 exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')

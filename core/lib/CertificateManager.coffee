@@ -4,11 +4,10 @@ path = require 'path'
 child_process = require 'child_process'
 fs = require 'fs'
 
-FileCache = require './FileCache'
+{cache} = Power
 
 module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->
-    @cache = new FileCache 1024
     @is_win = /^win/.test process.platform
     if @is_win
       @cmd_gen_root = path.join(@cmd_path, './gen-rootCA.cmd')
@@ -48,7 +47,7 @@ module.exports = class CertificateManager
     cert_file = path.join(@cert_path, "#{hostname}.crt")
     key_file = path.join(@cert_path, "#{hostname}.key")
     Promise.map [key_file, cert_file], (file_path) =>
-      @cache.readFile file_path
+      cache.readFile file_path
     .catch (err) =>
       @createCert(hostname).then =>
         @getCertFile hostname

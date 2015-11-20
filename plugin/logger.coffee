@@ -1,7 +1,9 @@
+url = require 'url'
+
 exports.before = (request, res, next) ->
   res.logger =
     start: new Date().getTime()
-    url: request.url
+    url: url.format(request.uri)
     method: request.method
   next()
 

@@ -5,6 +5,7 @@ PowerProxy = require './core/'
 require('crash-reporter').start()
 
 global.Power = new PowerProxy
+  host: '127.0.0.1'
   port: 8001
   plugins: ['logger', 'baidu']
 
