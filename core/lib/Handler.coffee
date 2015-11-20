@@ -64,11 +64,13 @@ exports.requestHandler = (req, res) ->
     plugin.run 'before.request', options, res, ->
       request options, (err, proxy_res) ->
         return res.end() if err
-        resource = _.pick proxy_res, ['statusCode', 'headers', 'body']
-        delete resource.headers['content-encoding']
-        resource.headers['content-length'] = resource.body.length
-        plugin.run 'after.request', resource, res, ->
-          res.set(resource.headers).send(resource.statusCode, resource.body)
+
+        response = _.pick proxy_res, ['statusCode', 'headers', 'body']
+        delete response.headers['content-encoding']
+        response.headers['content-length'] = response.body.length
+
+        plugin.run 'after.request', response, res, ->
+          res.set(response.headers).send(response.statusCode, response.body)
 
 exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')
