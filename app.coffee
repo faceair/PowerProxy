@@ -9,9 +9,11 @@ global.Power = new PowerProxy
   port: 8001
   plugins: ['logger', 'baidu']
   dns:
-    address: '119.29.29.29'
-    port: 53
-    type: 'udp'
+    timeout: 1000
+    server:
+      address: '119.29.29.29'
+      port: 53
+      type: 'udp'
 
 Power.setup().then ->
   Power.startServer()

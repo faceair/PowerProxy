@@ -36,7 +36,7 @@ exports.requestHandler = (req, res) ->
       throw err if err
 
       Promise.resolve().then ->
-        dns.lookup options.uri.host, (options.dns ? config.dns)
+        dns.lookup options.uri.host, (options.dns ? config.dns?.server)
         .then (address) ->
           options.hostname = address
       .then ->
