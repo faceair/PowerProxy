@@ -11,7 +11,7 @@ module.exports = class FileCache
     [cache] = _.remove @pool, ({path}) -> file_path is path
     if cache
       @cachePush cache
-      return cache.content
+      return Promise.resolve(cache.content)
     else
       Promise.promisify(fs.readFile) file_path, options
       .then (content) =>

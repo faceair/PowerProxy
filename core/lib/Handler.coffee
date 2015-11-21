@@ -34,7 +34,6 @@ exports.requestHandler = (req, res) ->
 
     Power.plugin.run 'before.request', options, res, (err) ->
       throw err if err
-      console.log options
       Promise.resolve().then ->
         if options.dns?.address and options.dns?.port and options.dns?.type
           dns.lookup options.uri.host, options.dns
