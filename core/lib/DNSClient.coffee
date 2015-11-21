@@ -4,15 +4,11 @@ _ = require 'lodash'
 
 module.exports = class DNSClient
   constructor: (@config) ->
-    @pool = []
 
   lookup: (hostname, server) ->
     new Promise (resolve, reject) =>
-
-      record = _.find @pool, (record) ->
-        return record.hostname is hostname and record.expired_at > new Date().getTime()
-      if record
-        return resolve record.address
+      if _.isString server
+        server = address: server
 
       dns_req = dns.Request
         question: dns.Question
@@ -30,15 +26,7 @@ module.exports = class DNSClient
         record = _.find answer, (record) -> record.address
         if record
           resolve record.address
-          @cachePush
-            hostname: hostname
-            address: record.address
-            expired_at: new Date().getTime() + record.ttl * 1000
         else
           resolve null
 
       dns_req.send()
-
-  cachePush: (record) ->
-    _.remove @pool, ({expired_at, hostname}) -> hostname is record.hostname or expired_at < new Date().getTime()
-    @pool.push record
