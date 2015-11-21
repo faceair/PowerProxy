@@ -39,7 +39,7 @@ module.exports = class PowerProxy
 
     @certmgr = new CertificateManager
       cert_path: path.join(@utils.getUserHome(), '/.powerproxy/')
-      cmd_path: path.join(__dirname, '..', './cert/')
+      cmd_path: path.join(__dirname, '/bin/')
 
     @certmgr.confirmCertPath()
 

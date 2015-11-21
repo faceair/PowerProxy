@@ -6,10 +6,10 @@ tls = require 'tls'
 request = require 'request'
 _ = require 'lodash'
 
-{config, utils, certmgr, dns} = Power
+{config, certmgr, dns} = Power
 
 exports.requestHandler = (req, res) ->
-  res = utils.extendRes res
+  res = extendRes res
 
   is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
 
@@ -18,7 +18,7 @@ exports.requestHandler = (req, res) ->
     post_data.push chunk
   req.on 'end', ->
     req_data = Buffer.concat(post_data)
-    req.headers = utils.lowerKeys req.headers
+    req.headers = lowerKeys req.headers
 
     options =
       uri: url.parse(if is_https then "https://#{req.headers.host}#{req.url}" else req.url)
@@ -87,3 +87,43 @@ exports.connectHandler = (req, socket, head) ->
         socket.write "HTTP/#{req.httpVersion} 200 OK\r\n\r\n", 'UTF-8', ->
           proxy_conn.pipe(socket)
           socket.pipe(proxy_conn)
+
+lowerKeys = (object) ->
+  for key of object
+    value = object[key]
+    delete object[key]
+    object[key.toLowerCase()] = value
+  return object
+
+extendRes = (res) ->
+  res.get = (field) ->
+    res.getHeader field
+
+  res.status = (status) ->
+    res.statusCode = status
+    return res
+
+  res.set = res.header = (name, value) ->
+    headers = name
+    unless _.isObject headers
+      headers = {}
+      headers[name] = value
+    for name, value of headers
+      res.setHeader name, value
+    return res
+
+  res.send = (status, data) ->
+    unless _.isNumber status
+      [status, data] = [null, status]
+
+    unless res.get('Content-Type')
+      res.set 'Content-Type', 'text/html; charset=utf-8'
+    res.statusCode = status if status
+    res.end data
+
+  res.redirect = (url, status = 302) ->
+    res.statusCode = status
+    res.set 'location', url
+    res.end()
+
+  return res
