@@ -17,7 +17,7 @@ module.exports = class DNSClient
         server: server
         timeout: @config?.timeout or 1000
 
-      dns_req.on 'timeout', =>
+      dns_req.on 'timeout', ->
         reject new Error 'DNS Request Timeout.'
 
       dns_req.on 'message', (err, {answer}) =>

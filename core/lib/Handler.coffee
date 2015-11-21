@@ -1,9 +1,10 @@
 https = require 'https'
+http = require 'http'
+zlib = require 'zlib'
 net = require 'net'
 url = require 'url'
 tls = require 'tls'
 
-request = require 'request'
 _ = require 'lodash'
 
 {config, certmgr, dns} = Power
@@ -11,26 +12,21 @@ _ = require 'lodash'
 exports.requestHandler = (req, res) ->
   res = extendRes res
 
-  is_https = if not _.isUndefined(req.connection.encrypted) and not /^http:/.test(req.url) then true else false
+  is_https = req.connection.encrypted and not /^http:/.test(req.url)
+  req.url = if is_https then "https://#{req.headers.host}#{req.url}" else req.url
 
   post_data = []
   req.on 'data', (chunk) ->
     post_data.push chunk
   req.on 'end', ->
-    req_data = Buffer.concat(post_data)
+    req.body = Buffer.concat(post_data)
     req.headers = lowerKeys req.headers
 
     options =
-      uri: url.parse(if is_https then "https://#{req.headers.host}#{req.url}" else req.url)
+      uri: _.pick(url.parse(req.url), ['protocol', 'host', 'hostname', 'port', 'path', 'auth'])
       method: req.method.toUpperCase()
-      headers: _.extend(req.headers, 'content-length': req_data.length)
-      body: req_data
-      followRedirect: false
-      encoding: null
-      forever: /keep-alive/i.test req.headers.connection
-      pool:
-        maxSockets: 1024
-      gzip: true
+      headers: _.extend(req.headers, 'content-length': req.body.length)
+      body: req.body
 
     Power.plugin.run 'before.request', options, res, (err) ->
       throw err if err
@@ -38,19 +34,39 @@ exports.requestHandler = (req, res) ->
         if options.dns?.address and options.dns?.port and options.dns?.type
           dns.lookup options.uri.host, options.dns
           .then (address) ->
-            options.hostname = address
+            options.uri.hostname = address
       .then ->
-        request options, (err, proxy_res) ->
-          return res.end() if err
 
-          response = _.pick proxy_res, ['statusCode', 'headers', 'body']
-          delete response.headers['content-encoding']
-          response.headers['content-length'] = response.body.length
+        proxy_options = _.extend options.uri, _.omit(options, ['uri', 'body', 'dns'])
+        proxy_req = (if is_https then https else http).request proxy_options, (proxy_res) ->
+          receive_data = []
+          proxy_res.on 'data', (chunk) ->
+            receive_data.push chunk
+          proxy_res.on 'end', ->
+            proxy_res.body = Buffer.concat(receive_data)
+            proxy_res.headers = lowerKeys proxy_res.headers
 
-          Power.plugin.run 'after.request', response, res, (err) ->
-            throw err if err
+            is_gzip = /gzip/i.test proxy_res.headers['content-encoding']
 
-            res.set(response.headers).send(response.statusCode, response.body)
+            response = _.pick proxy_res, ['statusCode', 'headers', 'body']
+
+            if is_gzip
+              delete response.headers['content-encoding']
+              zlib.gunzip response.body, (err, body) ->
+                response.headers['content-length'] = body.length
+                response.body = body
+                Power.plugin.run 'after.request', response, res, (err) ->
+                  throw err if err
+                  res.set(response.headers).send(response.statusCode, response.body)
+            else
+              Power.plugin.run 'after.request', response, res, (err) ->
+                throw err if err
+                res.set(response.headers).send(response.statusCode, response.body)
+
+        proxy_req.on 'error', ->
+          res.end()
+
+        proxy_req.end req.body
 
 exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')
