@@ -23,6 +23,7 @@ exports.requestHandler = (req, res) ->
     req.headers = lowerKeys req.headers
 
     options =
+      url: req.url
       uri: _.pick(url.parse(req.url), ['protocol', 'host', 'hostname', 'port', 'path', 'auth'])
       method: req.method.toUpperCase()
       headers: _.extend(req.headers, 'content-length': req.body.length)
@@ -36,8 +37,7 @@ exports.requestHandler = (req, res) ->
           .then (address) ->
             options.uri.hostname = address
       .then ->
-
-        proxy_options = _.extend options.uri, _.omit(options, ['uri', 'body', 'dns'])
+        proxy_options = _.extend options.uri, _.pick(options, ['method', 'headers', 'agent'])
         proxy_req = (if is_https then https else http).request proxy_options, (proxy_res) ->
           receive_data = []
           proxy_res.on 'data', (chunk) ->
@@ -63,8 +63,14 @@ exports.requestHandler = (req, res) ->
                 throw err if err
                 res.set(response.headers).send(response.statusCode, response.body)
 
-        proxy_req.on 'error', ->
-          res.end()
+        proxy_req.on 'error', (err) ->
+          response =
+            statusCode: 502
+            headers: {}
+            body: err.toString()
+          Power.plugin.run 'after.request', response, res, (err) ->
+            throw err if err
+            res.set(response.headers).send(response.statusCode, response.body)
 
         proxy_req.end req.body
 
