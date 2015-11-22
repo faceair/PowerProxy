@@ -72,7 +72,8 @@ exports.requestHandler = (req, res) ->
             throw err if err
             res.set(response.headers).send(response.statusCode, response.body)
 
-        proxy_req.end req.body
+        proxy_req.write options.body
+        proxy_req.end()
 
 exports.connectHandler = (req, socket, head) ->
   [host, targetPort] = req.url.split(':')

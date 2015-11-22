@@ -6,6 +6,8 @@
     "bluebird": "^3.0.5",
     "coffee-script": "^1.10.0",
     "hosts-parser": "^0.3.1",
+    "http-proxy-agent": "^1.0.0",
+    "https-proxy-agent": "^1.0.0",
     "lodash": "^3.10.1",
     "native-dns": "^0.7.0",
     "node-pluggable": "^0.3.3"
