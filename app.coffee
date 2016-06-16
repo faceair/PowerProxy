@@ -1,6 +1,6 @@
 PowerProxy = require './core/'
 
-Power = new PowerProxy
+global.Power = new PowerProxy
   host: '127.0.0.1'
   port: 8001
   plugins: ['logger', 'baidu', 'hosts']
