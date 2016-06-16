@@ -4,7 +4,7 @@ path = require 'path'
 child_process = require 'child_process'
 fs = require 'fs'
 
-{cache} = Power
+{cache} = power
 
 module.exports = class CertificateManager
   constructor: ({@cert_path, @cmd_path}) ->

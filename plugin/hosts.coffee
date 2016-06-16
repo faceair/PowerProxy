@@ -2,7 +2,7 @@
 path = require 'path'
 _ = require 'lodash'
 
-{cache} = Power
+{cache} = power
 
 exports.before = (request, res, next) ->
   cache.readFile path.join(__dirname, 'hosts.txt'), encoding: 'utf8'

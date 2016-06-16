@@ -1,2 +1,2 @@
 require('coffee-script/register');
-module.exports = require('./PowerProxy.coffee');
+module.exports = require('./Power.coffee');

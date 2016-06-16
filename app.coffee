@@ -1,13 +1,13 @@
-PowerProxy = require './core/'
+Power = require './core/'
 
-global.Power = new PowerProxy
+global.power = new Power
   host: '127.0.0.1'
   port: 8001
   plugins: ['logger', 'baidu', 'hosts']
   dns:
     timeout: 1000
 
-Power.setup().then ->
-  Power.startServer()
+power.setup().then ->
+  power.startServer()
 .catch (err) ->
   throw err

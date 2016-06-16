@@ -7,7 +7,7 @@ tls = require 'tls'
 
 _ = require 'lodash'
 
-{config, certmgr, dns} = Power
+{config, certmgr, dns} = power
 
 exports.requestHandler = (req, res) ->
   res = extendRes res
@@ -29,7 +29,7 @@ exports.requestHandler = (req, res) ->
       headers: _.extend(req.headers, 'content-length': req.body.length)
       body: req.body
 
-    Power.plugin.run 'before.request', options, res, (err) ->
+    power.plugin.run 'before.request', options, res, (err) ->
       throw err if err
       Promise.resolve().then ->
         if options.dns?.address and options.dns?.port and options.dns?.type
@@ -55,11 +55,11 @@ exports.requestHandler = (req, res) ->
               zlib.gunzip response.body, (err, body) ->
                 response.headers['content-length'] = body.length
                 response.body = body
-                Power.plugin.run 'after.request', response, res, (err) ->
+                power.plugin.run 'after.request', response, res, (err) ->
                   throw err if err
                   res.set(response.headers).send(response.statusCode, response.body)
             else
-              Power.plugin.run 'after.request', response, res, (err) ->
+              power.plugin.run 'after.request', response, res, (err) ->
                 throw err if err
                 res.set(response.headers).send(response.statusCode, response.body)
 
@@ -68,7 +68,7 @@ exports.requestHandler = (req, res) ->
             statusCode: 502
             headers: {}
             body: err.toString()
-          Power.plugin.run 'after.request', response, res, (err) ->
+          power.plugin.run 'after.request', response, res, (err) ->
             throw err if err
             res.set(response.headers).send(response.statusCode, response.body)
 

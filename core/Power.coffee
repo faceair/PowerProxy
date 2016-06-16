@@ -4,7 +4,7 @@ http = require 'http'
 path = require 'path'
 fs = require 'fs'
 
-module.exports = class PowerProxy
+module.exports = class Power
   constructor: (@config) ->
 
   setup: ->
