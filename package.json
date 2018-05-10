@@ -1,16 +1,15 @@
 {
-  "name": "PowerProxy",
+  "name": "power_proxy",
   "version": "0.1.0",
   "main": "index.js",
   "dependencies": {
-    "bluebird": "^3.0.5",
-    "coffee-script": "^1.10.0",
-    "hosts-parser": "^0.3.1",
-    "http-proxy-agent": "^1.0.0",
-    "https-proxy-agent": "^1.0.0",
-    "lodash": "^3.10.1",
-    "native-dns": "^0.7.0",
-    "node-pluggable": "^0.3.3"
+    "async": "^2.6.0",
+    "bluebird": "*",
+    "hosts-parser": "*",
+    "http-proxy-agent": "*",
+    "https-proxy-agent": "*",
+    "lodash": "*",
+    "native-dns": "*"
   },
   "license": "SATA"
 }
